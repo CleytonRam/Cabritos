@@ -25,6 +25,8 @@ public class WordleGrid : MonoBehaviour
     private TileData[,] tiles;
 
 
+
+    private bool _gameOver = false;
     private int _currentRow = 0;
     private int _currentCol = 0;
     private string _currentWord = "";
@@ -47,6 +49,8 @@ public class WordleGrid : MonoBehaviour
 
     public void Update()
     {
+        if (_gameOver || _currentRow >= rows) return;
+
         if (_currentRow >= rows) return;
 
         if (Input.inputString.Length > 0)
@@ -101,7 +105,7 @@ public class WordleGrid : MonoBehaviour
     {
         validWords = new List<string>
         {
-          "TESLA", "BODAO", "PIRUS", "CODAR", "MESAS", "PENIS", "PEITO", "BUNDA", "VIADO"
+          "TESLA", "BODAO", "PIRUS", "CODAR", "MESAS", "PENIS", "PEITO", "BUNDA", "VIADO", "GAMES", "OADOB"
         };
     }
 
@@ -134,29 +138,29 @@ public class WordleGrid : MonoBehaviour
 
     public void ProcessEnter()
     {
-        if (_currentCol != cols)
-        {
-            Debug.Log("Coloca uma palavra ai de 5 letra amigo");
-            return;
-        }
+        if (_currentCol != cols) return;
 
         string guess = GetCurrentWord();
         if (!validWords.Contains(guess))
         {
-            Debug.Log("Plavra nao encontrada no dic");
+            Debug.Log("Palavra inválida");
             return;
         }
 
         CheckGuess(guess);
 
+        if (guess == targetWord)
+        {
+            return;
+        }
+
         _currentRow++;
         _currentCol = 0;
 
-        if(_currentRow >= rows) 
+        if (_currentRow >= rows)
         {
-            Debug.Log("Fim do jogo, A palavra era: " + targetWord);
+            Debug.Log("Suas tentativas acabaram. A palavra era: " + targetWord);
         }
-
     }
 
     public void CheckGuess(string guess) 
@@ -182,11 +186,13 @@ public class WordleGrid : MonoBehaviour
             }
         }
 
-        for (int i = 0; cols < i; i++) 
+        for (int i = 0; i < cols; i++) 
         {
             if (guessChars[i] == targetChars[i])
                 continue;
+
             bool found = false;
+
             for (int j = 0; j < cols; j++) 
             {
                 if (!targetUsed[j] && guessChars[i] == targetChars[j]) 
@@ -208,6 +214,7 @@ public class WordleGrid : MonoBehaviour
             // Aqui você pode desabilitar a entrada, mostrar mensagem, etc.
             // Por exemplo, definir currentRow = rows para parar a digitação:
             _currentRow = rows; 
+            EndGame();
         }
     }
 
@@ -217,6 +224,11 @@ public class WordleGrid : MonoBehaviour
         {
             tiles[row,col].image.color = color;
         }
+    }
+
+    public void EndGame() 
+    {
+        _gameOver = true;
     }
 
 

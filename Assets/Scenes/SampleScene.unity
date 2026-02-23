@@ -598,6 +598,12 @@ MonoBehaviour:
   gridParent: {fileID: 1473471105}
   rows: 6
   cols: 5
+  targetWord: BODAO
+  validWords: []
+  correctColor: {r: 0, g: 1, b: 0, a: 1}
+  presentColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  wrongColor: {r: 0.509434, g: 0.48300108, b: 0.48300108, a: 1}
+  defaultColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
