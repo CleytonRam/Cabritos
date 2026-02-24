@@ -11,10 +11,14 @@ public class WordleGrid : MonoBehaviour
     public Transform gridParent;
     public int rows = 6;
     public int cols = 5;
+    public MessageManager messageManager;
 
     [Header("Words")]
     public string targetWord = "BODAO";
     public List<string> validWords = new List<string>();
+    public List<string> possibleTargets = new List<string>();
+
+
 
     [Header("Colors")]
     public Color correctColor = Color.green;
@@ -45,13 +49,13 @@ public class WordleGrid : MonoBehaviour
     {
         CreateGrid();
         InitValidWords();
+        PickNewTarget();
     }
 
     public void Update()
     {
         if (_gameOver || _currentRow >= rows) return;
 
-        if (_currentRow >= rows) return;
 
         if (Input.inputString.Length > 0)
         {
@@ -101,12 +105,48 @@ public class WordleGrid : MonoBehaviour
         }
     }
 
+
+    private List<string> LoadWordsFromFile(string filename) 
+    {
+        List<string> words = new List<string>();
+        TextAsset file = Resources.Load<TextAsset>(filename);
+        if (file != null) 
+        {
+            string[] lines = file.text.Split(new[] {'\n', '\r'}, System.StringSplitOptions.RemoveEmptyEntries);
+            foreach (string line in lines) 
+            {
+                string word = line.Trim().ToUpperInvariant();
+                if(word.Length == cols) 
+                {
+                    words.Add(word);
+                }
+                else 
+                {
+                    Debug.LogWarning($"Palavra ignorada por ter tamanho diferente de {cols}: {word}");
+                }
+             
+            }
+        }
+        else { Debug.LogError($"Arquivo {filename} não encontrado na pasta Resources!"); }
+        return words;
+    }
+
     public void InitValidWords()
     {
-        validWords = new List<string>
+        validWords = LoadWordsFromFile("valid_words");
+        if (validWords.Count == 0) 
         {
-          "TESLA", "BODAO", "PIRUS", "CODAR", "MESAS", "PENIS", "PEITO", "BUNDA", "VIADO", "GAMES", "OADOB"
-        };
+            Debug.LogError("Nenhuma palavra válida carregada! Usando lista de emergência.");
+            validWords = new List<string> { "TESLA", "BODAO", "GAMES" }; // fallback
+        }
+
+        possibleTargets = LoadWordsFromFile("target_words");
+
+        if(possibleTargets.Count == 0) 
+        {
+            possibleTargets = new List<string>(validWords);
+        }
+        
     }
 
     public string GetCurrentWord()
@@ -119,6 +159,8 @@ public class WordleGrid : MonoBehaviour
         return word;
     }
 
+
+    #region PROCESSING
     public void ProcessLetter(char letter)
     {
         if (_currentCol < cols)
@@ -143,7 +185,10 @@ public class WordleGrid : MonoBehaviour
         string guess = GetCurrentWord();
         if (!validWords.Contains(guess))
         {
-            Debug.Log("Palavra inválida");
+            if(messageManager != null) 
+            {
+                messageManager.ShowMessage("Palavra Invalida meu parça");
+            }
             return;
         }
 
@@ -159,10 +204,12 @@ public class WordleGrid : MonoBehaviour
 
         if (_currentRow >= rows)
         {
-            Debug.Log("Suas tentativas acabaram. A palavra era: " + targetWord);
+            if (messageManager != null)
+                messageManager.ShowMessage("Suas tentativas acabaram. A palavra era: " + targetWord);
+            _gameOver = true;
         }
     }
-
+    #endregion
     public void CheckGuess(string guess) 
     {
         guess = guess.ToUpperInvariant();
@@ -210,10 +257,10 @@ public class WordleGrid : MonoBehaviour
         }
         if (guess == targetWord)
         {
-            Debug.Log("Você acertou!");
-            // Aqui você pode desabilitar a entrada, mostrar mensagem, etc.
-            // Por exemplo, definir currentRow = rows para parar a digitação:
-            _currentRow = rows; 
+            if(messageManager != null) 
+            {
+                messageManager.ShowMessage("Voce acertou!");
+            }
             EndGame();
         }
     }
@@ -223,6 +270,13 @@ public class WordleGrid : MonoBehaviour
         if (tiles[row, col].image != null) 
         {
             tiles[row,col].image.color = color;
+
+            TextMeshProUGUI txt = tiles[row, col].text;
+            if (txt != null)
+            {
+                float luminance = 0.2126f * color.r + 0.7152f * color.g + 0.0722f * color.b;
+                txt.color = luminance > 0.5f ? Color.black : Color.white;
+            }
         }
     }
 
@@ -231,6 +285,47 @@ public class WordleGrid : MonoBehaviour
         _gameOver = true;
     }
 
+    private void PickNewTarget() 
+    {
+        if(possibleTargets != null && possibleTargets.Count > 0) 
+        {
+            int index = UnityEngine.Random.Range(0,possibleTargets.Count);
+            targetWord = possibleTargets[index];
+        }
+        else if(validWords.Count > 0) 
+        {
+            int index = UnityEngine.Random.Range(0, validWords.Count);
+            targetWord = validWords[index];
+        }
+        else 
+        {
+            targetWord = "BODAO";
+        }
+        Debug.Log("Nova palavra alvo: " +  targetWord);
+    }
+
+
+    public void RestartGame() 
+    {
+        for (int row =0 ; row < rows; row++) 
+        {
+            for(int col =0 ; col < cols; col++) 
+            {
+                tiles[row, col].text.text = "";
+                tiles[row, col].image.color = defaultColor;
+                tiles[row, col].text.color = Color.black;
+            }
+        }
+
+        _currentRow = 0;
+        _currentCol = 0;
+        _gameOver = false;
+
+        if(messageManager!= null)
+            messageManager.ClearMessage();
+
+         PickNewTarget(); 
+    }
 
     [System.Serializable]
     public class TileData
